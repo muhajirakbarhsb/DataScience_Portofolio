@@ -1,0 +1,305 @@
+---
+title: "EFEK PROMOSI DENGAN PEMBERIAN KUPON VOUCHER TERHADAP KEMBALINYA USER UNTUK BERTRANSAKSI TANPA VOUCHER "
+author: "Muhajir Akbar Hasibuan Muhajirakbarhsb@gmail.com"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<style>
+body {
+text-align: justify}
+</style>
+
+
+Ketika menjalankan promosi, setiap organisasi harus memastikan ada keseimbangan antara nilai promosi yang dikeluarkan dengan goal yang diharapkan. Membakar sebanyak mungkin uang mungkin akan menarik banyak user, tapi apakah user-user tersebut akan kembali tanpa promosi?
+
+Dalam kasus ini akan dilakukan analisis dari hasil pilot testing dari dua promosi yang telah dilakukan. Dalam skema pertama, satu user group diberikan voucher senilai 10K dan grup yang lain diberikan voucher 25K. Tujuan dari analisis ini adalah untuk mengetahui jawaban dari pertanyaan ini:
+
+1.	Jumlah promosi mana yang akan menarik user untuk bertransaksi lebih banyak?
+
+Data yang diberikan memiliki informasi sebagai berikut:
+•	user_id – identifikasi unik untuk tiap user
+•	merchant_id - identifikasi unik untuk tiap penjual 
+•	promotion_type – tipe promosi, antara 10K atau 25K 
+•	three_trx – jika user melakukan 3 transaksi setelah diberikan voucher, kolom ini akan memiliki nilai 1. Jika tidak, nilainya 0
+•	five_trx - jika user melakukan 5 transaksi setelah diberikan voucher, kolom ini akan memiliki nilai 1. Jika tidak, nilainya 0
+
+
+Langkah analisis untuk kasus ini terbagi menjadi dua bagian, yang pertama merupakan bagian data wrangling dan anlisis lalu bagian kedua meliputi visualisasi data.
+
+
+
+
+__1. DATA WRANGLING - CLEANING__
+
+```{r Data Wrangling, echo=TRUE, results='markup'}
+library(dplyr) #package untuk data manipulation
+library(sqldf) #package untuk menjalankan sql languange dalam R
+
+dqlab=read.csv("preliminary_dataset.csv", header = TRUE) #memanggil file yang berbentuk csv
+sapply(dqlab, function(x) sum(is.na(x))) #dilakukan untuk menemukan missing value
+dqlab <- na.omit(dqlab) # menghapus baris yang terdapat missing value
+sapply(dqlab, function(x) sum(is.na(x))) # dilakukan untuk pengecekan kembali apakah masih terdapat data hilang
+dqlab <- select(dqlab, -X) #variabel x tidak memiliki makna apapun jadi bisa dihilangkan
+merchant= dqlab$merchant_id 
+merchant_id= as.character(merchant) #variabel merchant diubah kedalam bentuk karakter, sehingga ketika dilakukan visualisasi nantinya x-axis tidak menjadi sebuah interval karena merchant id pada data merupakan data dengan tipe integer
+dqlab <- select(dqlab, -merchant_id) #menghapus variabel merchant yang masih bertipe integer di data frame
+data2 <- data.frame(merchant_id, dqlab) #menggabungkan variabel merchant id yang sudah menjadi character dengan data frame
+dqlab <- data2
+dqlab <- dqlab[!(dqlab$three_trx=="0" & dqlab$five_trx==1),] #menghapus baris yang dengan kondisi three_trx = 0, five_trx = 1
+str(dqlab) #melihat tipe data dari dataframe
+head(dqlab) 
+nrow(distinct(dqlab, user_id)) #untuk melihat apakah ada user yang melakukan pembelian lebih dari satu kali
+nrow(distinct(dqlab, merchant_id)) #untuk melihat berapa jumlah merchant 
+```
+
+Proses data wrangling pada bagian pertama difokuskan untuk mengidentifikasi missing value pada data, dapat dilihat bahwa terdapat tiga baris data yang memiliki missing value, sehingga dilakukan proses cleaning dengan cara menghapus data yang memiliki missing value, proses ini dilakukan dengan fungsi na.omit. 
+tahap selanjutnya adalah menghapus kolom x, kolom x dihapus karena tidak memiliki makna, fungsinya sebagai nomor dapat digantikan dengan melihat row number pada table. Proses selanjutnya adalah melakukan pengecekan pada tipe data, pada bagian ini dilakukan pergantian tipe data pada kolom merchant_id dari yang sebelumnya berbentuk integer diubah kedalam bentuk character, sehingga ketika nantinya dilakukan visualisasi, x-axis tidak menjadi sebuah interva.Proses berikutnya adalah menghapus data dengan kondisi three_trx = 0 dan five_trx = 1, bagian ini penting untuk dilakukan karena, tidak mungkin seseorang telah melakukan transaksi sebanyak 5 kali jika ia belum melakukan transaksi sebanyak 3 kali.
+
+Berdasarkan Print Output diatas dapat dilihat bahwa data yang telah clean memiliki 8169 observasi dan 5 variabel, angka 8143 menerangkan bahwa ada 8143 user id unik yang melakukan transaksi dengan kata lain ada beberapa user yang melakukan transaksi di merchant_id yang berbeda, sedangkan angka 50 pada ouput merukan jumlah merchant_id yang terdapat pada sampel data.
+
+
+
+__1.2. DATA WRANGLING - TRANSFORM __
+
+```{r Data Wrangling Bagian II, echo=TRUE,  results='markup'}
+#filter data berdasarkan user id yang membeli lebih di satu merchant
+a= sqldf("SELECT * FROM dqlab WHERE user_id IN (SELECT user_id FROM dqlab GROUP BY user_id HAVING COUNT(*) > 1) GROUP BY user_id, merchant_id, coupon_value, three_trx, five_trx;")
+
+a25k = dplyr::filter(a, coupon_value %in% c("25000")) #mengambil dataset pembeli yang membeli lebih di satu merchant berdasarkan nilai kupon 25000
+b25k = dplyr::filter(a, coupon_value %in% c("10000"))  #mengambil dataset pembeli yang membeli lebih di satu merchant berdasarkan nilai kupon 10000
+
+
+#filter data lengkap berdasarkan nilai dari kupon
+data25k = dplyr::filter(dqlab, coupon_value %in% c("25000")) 
+head(data25k)
+data10k = dplyr::filter(dqlab, coupon_value %in% c("10000")) 
+t325k= sqldf("SELECT * FROM data25k WHERE three_trx = 1;") 
+head(t325k)
+t525k= sqldf("SELECT * FROM data25k WHERE five_trx = 1;") 
+
+t310k= sqldf("SELECT * FROM data10k WHERE three_trx = 1;") 
+t510k= sqldf("SELECT * FROM data10k WHERE five_trx = 1;") 
+notrx25k= sqldf("SELECT * FROM data25k WHERE three_trx = 0;") 
+
+notrx10k= sqldf("SELECT * FROM data10k WHERE three_trx = 0;") 
+ft325k= sqldf("SELECT merchant_id, COUNT(*) FROM t325k GROUP BY merchant_id ORDER BY 2 DESC;") 
+ft525k= sqldf("SELECT merchant_id, COUNT(*) FROM t525k GROUP BY merchant_id ORDER BY 2 DESC;") 
+head(ft525k)
+ft310k= sqldf("SELECT merchant_id, COUNT(*) FROM t310k GROUP BY merchant_id ORDER BY 2 DESC;") 
+ft510k= sqldf("SELECT merchant_id, COUNT(*) FROM t510k GROUP BY merchant_id ORDER BY 2 DESC;") 
+fn25k= sqldf("SELECT merchant_id, COUNT(*) FROM notrx25k GROUP BY merchant_id ORDER BY 2 DESC;") 
+fn10k= sqldf("SELECT merchant_id, COUNT(*) FROM notrx10k GROUP BY merchant_id ORDER BY 2 DESC;") 
+ftotal= sqldf("SELECT merchant_id, COUNT(*) FROM dqlab GROUP BY merchant_id ORDER BY 2 DESC;") 
+```
+Transformasi data merupakan proses yang sangat penting dilakukan, pada bagian ini dilakukan proses transformasi data frame dengan cara melakukan filter menggunakan bahasa SQL yang dijalankan di R dengan menggunakan package sqldf, data frame yang telah ditranformasi ini berguna untuk memudahkan proses visualisasi. 
+
+Data tranformasi yang diberikan memiliki informasi sebagai berikut:
+
+•a        = Filter data berdasarkan user id yang membeli lebih di satu merchant
+
+•a25k     = Dataset pembeli yang membeli lebih di satu merchant berdasarkan nilai kupon 25000
+
+•b25k     = Dataset pembeli yang membeli lebih di satu merchant berdasarkan nilai kupon 10000
+
+•data25k  = Dataset berdasarkan nilai kupon sebesar 25000 
+
+•data10k  = Dataset berdasarkan nilai kupon sebesar 10000
+
+•t325k    = Dataset user mendapatkan kupon 25000 dan berbelanja 3 kali
+
+•t525k    = Dataset user mendapatkan kupon 25000 dan berbelanja 5 kali
+
+•t310k    = Dataset user mendapatkan kupon 10000 dan berbelanja 3 kali
+
+•t510k    = Dataset user mendapatkan kupon 10000 dan berbelanja 5 kali
+
+•notrx25k = Dataset berdasarkan nilai kupon sebesar 25000 dan berbelanja kurang dari 3 kali
+
+•notrx10k = Dataset berdasarkan nilai kupon sebesar 10000 dan berbelanja kurang dari 3 kali
+
+•ft325k   = Frekuensi berbelanja pada setiap merchant berdasarkan user yang mendapatkan kupon 25000 dan       
+berbelanja 3 kali diurutkan dari terbesar ke terkecil
+
+•ft525k   = Frekuensi berbelanja pada setiap merchant berdasarkan user yang mendapatkan kupon 25000 dan 
+
+berbelanja 5 kali diurutkan dari terbesar ke terkecil
+
+•ft310k   = Frekuensi berbelanja pada setiap merchant berdasarkan user yang mendapatkan kupon 10000 dan berbelanja 3 kali diurutkan dari terbesar ke terkecil
+
+•ft510k   = Frekuensi berbelanja pada setiap merchant berdasarkan user yang mendapatkan kupon 10000 dan berbelanja 5 kali diurutkan dari terbesar ke terkecil
+
+•fn25k    = frekuensi berbelanja pada setiap merchant berdasarkan user yang mendapatkan kupon 25000 dan berbelanja kurang 3 kali diurutkan dari terbesar ke terkecil
+
+•fn10k    = Frekuensi berbelanja pada setiap merchant berdasarkan user yang mendapatkan kupon 10000 dan berbelanja kurang 3 kali diurutkan dari terbesar ke terkecil
+
+•ftotal   = Frekuensi berbelanja pada setiap merchant berdasarkan user diurutkan dari terbesar ke terkecil
+
+
+Data yang bersih merupakan data yang telah melalui proses wrangling sehingga data menjadi minim noise sehingga meminimalisisr kemungkinan terjadinya bias pada saat pengolahan data maupun visualisasi data.
+
+
+
+
+__1.3. ANALISIS DATA __
+
+Analisis data yang dilakukan adalah regresi logistik biner, dengan melakukan regresi ini akan didapatkan hasil bagaimana peluang seorang user akan membeli sebanyak 3 atau 5 kali berdasarkan voucher kupon yang diberikan dan akan menampilkan hasil apakah perbedaan itu signifikan atau tidak. Analisis ini dibagi menjadi dua bagian, pada bagian pertama variabel dependent adalah three_trx dan pada bagian kedua variabel dependent adalah five_trx dengan variabel independent adalah coupon value.
+
+
+
+__- y = three_trx dan x = coupon_value __
+```{r Regresi Logistik, echo=TRUE,  results='markup'}
+#Logistic Regression dengan y = three_trx dan x = coupon_value
+library(aod)
+library(ggplot2)
+head(dqlab)
+logit <- subset( dqlab, select = -c(merchant_id, user_id, five_trx ) ) # Langkah ini dilakukan untuk memilih kolom yang akan diinput ke data frame yang baru
+head(logit)
+xtabs(~three_trx + coupon_value, data = logit) #dilakukan untuk menampilkan tabel kontingensi
+logit$coupon_value <- factor(logit$coupon_value) #Kolom coupon_value dijadikan sebagai faktor agar bersifat kategori
+mylogit <- glm(three_trx ~ coupon_value , data = logit, family = "binomial") #Regresi Logisitik Biner
+summary(mylogit)
+confint(mylogit) #Menampilkan Confident interval berdasarkan  log likelihood
+confint.default(mylogit) #Menampilkan confident interval berdasarkan standar error
+wald.test(b = coef(mylogit), Sigma = vcov(mylogit), Terms = 2) #menampilkan hasil chi-square test
+```
+Bagian ini merupakan regresi logistik biner dengan variabel y = three_trx dan x = coupon_value
+
+• Output dari Regresi Logit menjelaskan bahwa pemberian kupon sebesar 25000 akan menaikkan peluang odds user berbelanja sebanyak 3 kali transaksi sebesar 0.15642 daripada pemberian kupon sebesar 10000 akan tetapi perbedaan peluang ini tidak signifikan secara statistik karena memiliki p-value lebih besar daripada 0.05
+
+• Pada ouput confident interval berdasarkan log likelihood menjelaskan bahwa perbedaan peluang odds antara pemberian kupon 25000 dan 10000 berkisar antara -0.088 sampai 0.4037
+
+• Pada ouput confident interval berdasarkan standar error menjelaskan bahwa perbedaan peluang odds antara pemberian kupon 25000 dan 10000 berkisar antara -0.089 sampai 0.402
+
+• Hasil pada output chi-square dengan nilai chi square sebesar 1.6 dan p-value 0.21 mengindikasikan bahwa efek dari pemberian kupon tidak berpengaruh secara signifikan terhadap transaksi user.
+
+
+
+
+__- y = five_trx dan x = coupon_value __
+```{r echo=TRUE,  results='markup'}
+#Logistic Regressio dengan y = five_trx dan x = coupon_value
+
+head(dqlab)
+logit2 <- subset( dqlab, select = -c(merchant_id, user_id, three_trx ) ) # Langkah ini dilakukan untuk memilih kolom yang akan diinput ke data frame yang baru
+head(logit2)
+xtabs(~five_trx + coupon_value, data = logit2) #dilakukan untuk menampilkan tabel kontingensi
+logit2$coupon_value <- factor(logit2$coupon_value) #Kolom coupon_value dijadikan sebagai faktor agar bersifat kategori
+mylogit2 <- glm(five_trx ~ coupon_value , data = logit2, family = "binomial") #Regresi Logisitik Biner
+summary(mylogit2)
+confint(mylogit2) #Menampilkan Confident interval berdasarkan  log likelihood
+confint.default(mylogit2) #Menampilkan confident interval berdasarkan standar error
+wald.test(b = coef(mylogit2), Sigma = vcov(mylogit2), Terms = 2) #menampilkan hasil chi-square test
+```
+Bagian ini merupakan regresi logistik biner dengan variabel y = five_trx dan x = coupon_value
+
+• Output dari Regresi Logit menjelaskan bahwa pemberian kupon sebesar 25000 akan menaikkan peluang odds user berbelanja sebanyak 5 kali transaksi sebesar 0.2768 daripada pemberian kupon sebesar 10000 akan tetapi perbedaan peluang ini tidak signifikan secara statistik karena memiliki p-value lebih besar daripada 0.05
+
+• Pada ouput confident interval berdasarkan log likelihood menjelaskan bahwa perbedaan peluang odds antara pemberian kupon 25000 dan 10000 berkisar antara -0.325 sampai 0.89
+
+• Pada ouput confident interval berdasarkan standar error menjelaskan bahwa perbedaan peluang odds antara pemberian kupon 25000 dan 10000 berkisar antara -0.33 sampai 0.88
+
+• Hasil pada output chi-square dengan nilai chi square sebesar 0.8 dan p-value 0.31 mengindikasikan bahwa efek dari pemberian kupon tidak berpengaruh secara signifikan terhadap transaksi user.
+
+
+
+__2. Visualisasi Data __
+
+Visualiasi data dilakukan dengan menggunakan barchart dengan x axis adalah merchant id dan y axis adalah frequensi transaksi dari merchant tersebut. Visualisasi ini terdiri dari 3 bagian yaitu berdasarkan user yang berbelanja 3 kali, 5 kali, dan kurang dari 3 kali 
+
+
+__2.1. Plot perbandingan merchant berdasarkan frequensi user yang berbelanja 3 kali menurut jenis kupon yang didapat __
+```{r Visualisasi Data, echo=TRUE, fig.height=3, fig.width=9,  results='markup'}
+####### VISUALISASI ########
+library(ggplot2)
+library(viridis)
+library(hrbrthemes)
+
+#plot perbandingan merchant berdasarkan frequensi user yang berbelanja 3 kali menurut jenis kupon yang didapat
+df1=ft310k[-c(11:26),] # mengambil 10 merchant yang paling banyak melakukan transaksi
+df2=ft325k[-c(11:26),] # mengambil 10 merchant yang paling banyak melakukan transaksi
+
+Jenis_Kupon <- rep(25000 , 10)
+Jenis_Kupon=as.character(Jenis_Kupon)
+df2 <- data.frame(df2, Jenis_Kupon)
+Jenis_Kupon <- rep(10000 , 10)
+Jenis_kupon=as.character(Jenis_Kupon)
+df1 <- data.frame(df1, Jenis_Kupon)
+plot1= merge(df1,df2, all= TRUE)
+plot1
+
+p <-ggplot(plot1, aes(merchant_id, COUNT...)) + theme_bw()
+p + geom_bar(stat = "identity", aes(fill = plot1$Jenis_Kupon)) + xlab("Merchant Id") + ylab("Jumlah Transaksi") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + labs(fill = "Jenis Kupon") + theme(plot.title = element_text(hjust = 0.5))  + theme(plot.title = element_text(size = 8, face = "bold")) + labs(title = "PERBANDINGAN MERCHANT BERDASARKAN FREQUENSI USER YANG BERBELANJA 3 KALI MENURUT JENIS KUPON YANG DIDAPAT" ) 
+```
+
+Gambar diatas merupakan visualisasi frequensi merchant id berdasarkan frequensi user yang berbelanja 3 kali setelah mendapatkan kupon diskon, hanya 10 merchant dengan jumlah user terbanyak pada masing-masing jenis kupon yang diambil, ada 4 merchant yang memiliki irisan untuk jenis kupon 10000 dan 25000. Merchant yang paling banyak menarik user untuk kembali berbelanja adalah merchant dengan id 404793 dengan jumlah total user berbelanja kembali setelah mendapat kupon 10000 adalah 22 dan setelah mendapat kupon 25000 adalah 23, berdasarkan gambar juga terlihat bahwa kupon diskon 25000 menarik lebih banyak pelanggan untuk berbelanja kembali, sebanyak 3 kali.
+
+
+__2.2. Plot perbandingan merchant berdasarkan frequensi user yang berbelanja 5 kali menurut jenis kupon yang didapat __
+```{r echo=TRUE,fig.height=2.7, fig.width=9,  results='markup'}
+#plot perbandingan merchant berdasarkan frequensi user yang berbelanja 5 kali menurut jenis kupon yang didapat
+df3=ft510k[-c(10:26),] # mengambil 9 merchant yang paling banyak melakukan transaksi
+df4=ft525k[-c(10:26),] # mengambil 9 merchant yang paling banyak melakukan transaksi
+df3
+df4
+Jenis_kupon <- rep(25000 , 9)
+Jenis_kupon=as.character(Jenis_kupon)
+df4 <- data.frame(df4, Jenis_kupon)
+Jenis_kupon <- rep(10000 , 9)
+Jenis_kupon=as.character(Jenis_kupon)
+df3 <- data.frame(df3, Jenis_kupon)
+plot2= merge(df3,df4, all= TRUE)
+plot2
+
+plot2
+p2 <-ggplot(plot2, aes(merchant_id, COUNT...)) + theme_bw()
+p2 + geom_bar(stat = "identity", aes(fill = plot2$Jenis_kupon)) + xlab("Merchant Id") + ylab("Jumlah Transaksi") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + labs(fill = "Jenis Kupon") + theme(plot.title = element_text(hjust = 0.5)) + theme(plot.title = element_text(size = 8, face = "bold")) + labs(title = "PERBANDINGAN MERCHANT BERDASARKAN FREQUENSI USER YANG BERBELANJA 5 KALI MENURUT JENIS KUPON YANG DIDAPAT") 
+
+```
+Gambar diatas merupakan visualisasi frequensi merchant id berdasarkan frequensi user yang berbelanja 5 kali setelah mendapatkan kupon diskon, hanya 9 merchant dengan jumlah user terbanyak pada masing-masing jenis kupon yang diambil, ada 4 merchant yang memiliki irisan untuk jenis kupon 10000 dan 25000. Merchant yang paling banyak menarik user untuk kembali berbelanja adalah merchant dengan id 403894 dengan jumlah total user berbelanja kembali setelah mendapat kupon 25000 adalah 6, terlihat terjadi penurunan yang sangat banyak jika dibandingkan dengan user yang berbelanja 3 kali.
+
+__2.3 Plot perbandingan merchant berdasarkan frequensi user yang berbelanja kurang dari 3 kali __
+```{r echo=TRUE, fig.height=2.7, fig.width=9,  results='markup'}
+#plot perbandingan merchant berdasarkan frequensi user yang berbelanja kurang dari 3 kali
+df5=fn10k[-c(11:10000),] # mengambil 10 merchant yang paling banyak melakukan transaksi
+df6=fn25k[-c(11:10000),] # mengambil 10 merchant yang paling banyak melakukan transaksi
+df5
+df6
+Jenis_kupon <- rep(25000 , 10)
+Jenis_kupon=as.character(Jenis_kupon)
+df6 <- data.frame(df6, Jenis_kupon)
+Jenis_kupon <- rep(10000 , 10)
+Jenis_kupon=as.character(Jenis_kupon)
+df5 <- data.frame(df5, Jenis_kupon)
+plot3= merge(df5,df6, all= TRUE)
+plot3
+
+plot3
+p3 <-ggplot(plot3, aes(merchant_id, COUNT...)) + theme_bw()
+p3 + geom_bar(stat = "identity", aes(fill = plot3$Jenis_kupon)) + xlab("Merchant Id") + ylab("Jumlah Transaksi") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + labs(fill = "Jenis Kupon") + theme(plot.title = element_text(hjust = 0.5)) + theme(plot.title = element_text(size = 8, face = "bold")) + labs(title = "PERBANDINGAN MERCHANT BERDASARKAN FREQUENSI USER YANG BERBELANJA KURANG DARI 3 KALI MENURUT JENIS KUPON YANG DIDAPAT") 
+```
+Gambar diatas merupakan visualisasi frequensi merchant id berdasarkan frequensi user yang berbelanja kurang dari 3 kali setelah mendapatkan kupon diskon. Merchant dengan id 404793 dan 531400 merupakan merchant yang paling banyak memberikan voucher. Untuk Merchant 404793 memberikan kupon sebanyak 499 buah untuk jenis kupon 10000 akan tetapi hanya 22 user yang membeli kembali sampai 3 kali, 2 user membeli kembali sampai 5 kali dan 475 user membeli kurang dari 3 kali, sedangkan untuk jenis kupon 25000 merchant 404793 memberikan kupon sebanyak 694, akan tetapi hanya 23 yang membeli kembali sampai 3 kali, dan hanya 1 orang yang membeli sampai 5 sedangkan 670 sisanya tidak sampai 3 kali.
+
+
+
+__KESIMPULAN__
+
+
+Untuk menjawab pertanyaan "Jumlah promosi mana yang akan menarik user untuk bertransaksi lebih banyak?" maka ada 4 poin jawaban:
+
+__•Secara jumlah, kupon diskon sebesar 25000 menarik user untuk bertransaksi lebih banyak. __
+
+__• kupon diskon sebesar 25000 memiliki peluang menarik kembali pelanggan lebih besar daripada kupon 10000, akan tetapi perbedaan peluangnya tidak signifikan secara statistik.__
+
+__• Penggunaan kupon sebagai alat untuk menarik kembali pembeli ternyata tidak berpengaruh signifikan__.
+
+__• Plot visualisasi menunjukkan hanya sedikit sekali user yang kembali berbelanja setidaknya 3 kali setelah mendapatkan kupon.__
+
+
+
+
+
+
