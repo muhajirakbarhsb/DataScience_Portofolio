@@ -4,7 +4,7 @@ Repository containing portfolio of data science projects completed by me for aca
 Note: Data used in the projects is for demonstration purposes only.
 
 Contents
-<li><a href="https://github.com/PankajKarki/Data-Science-portfolio/blob/master/Analysing%20product%20sentiments.ipynb">Analysing product sentiment</a>: Analysing and building a sentiment classification model using graphlab with the amazon baby product dataset.</li>
+<li><a href="https://muhajirakbarhsb.github.io/DataScience_Portofolio/">Analysing Coupun Voucher Discount</a>: AKetika menjalankan promosi, setiap organisasi harus memastikan ada keseimbangan antara nilai promosi yang dikeluarkan dengan goal yang diharapkan. Membakar sebanyak mungkin uang mungkin akan menarik banyak user, tapi apakah user-user tersebut akan kembali tanpa promosi?</li>
 
 Contents
 <li><a href="https://www.slideshare.net/Abarlpbc6/analisis-text-mining-tentang-papua-di-twitter">Twitter Text Mining </a>: Retrieving and analysing twitter text data with LDA (latent dirichlet allocation)
