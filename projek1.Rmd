@@ -1,8 +1,10 @@
 ---
 title: "EFEK PROMOSI DENGAN PEMBERIAN KUPON VOUCHER TERHADAP KEMBALINYA USER UNTUK BERTRANSAKSI TANPA VOUCHER "
+knit : (function(input_file, encoding){out_dir<-'docs';rmarkdown::render(input_file,encoding=encoding,output_file=file.path(dirname(input_file), out_dir, 'index.html'))})
 author: "Muhajir Akbar Hasibuan Muhajirakbarhsb@gmail.com"
 output: html_document
 ---
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
