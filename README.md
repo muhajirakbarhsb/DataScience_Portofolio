@@ -4,6 +4,11 @@ Repository containing portfolio of data science projects completed by me for aca
 Note: Data used in the projects is for demonstration purposes only.
 
 Contents
+
+<li><a href="https://medium.com/@muhajirakbarhsb/analisis-sentimen-warganet-berdasarkan-cuitanterhadap-indonesian-government-dalam-menangani-dc1f117a8443">Analysing Coupun Voucher Discount</a>: Apa yang menjadi persepsi dan emosi terbesar publik terkait COVID 19 yang harus dijadikan pertimbangan pemerintah?
+Saya melakukan analisis mengenai sentimen publik berdasarkan cuitan twitter </li>
+
+
 <li><a href="https://muhajirakbarhsb.github.io/DataScience_Portofolio/">Analysing Coupun Voucher Discount</a>: Ketika menjalankan promosi, setiap organisasi harus memastikan ada keseimbangan antara nilai promosi yang dikeluarkan dengan goal yang diharapkan. Membakar sebanyak mungkin uang mungkin akan menarik banyak user, tapi apakah user-user tersebut akan kembali tanpa promosi?</li>
 
 
