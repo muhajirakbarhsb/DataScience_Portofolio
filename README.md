@@ -5,7 +5,7 @@ Note: Data used in the projects is for demonstration purposes only.
 
 Contents
 
-<li><a href="https://medium.com/@muhajirakbarhsb/analisis-sentimen-warganet-berdasarkan-cuitanterhadap-indonesian-government-dalam-menangani-dc1f117a8443">Analysing Coupun Voucher Discount</a>: Apa yang menjadi persepsi dan emosi terbesar publik terkait COVID 19 yang harus dijadikan pertimbangan pemerintah?
+<li><a href="https://medium.com/@muhajirakbarhsb/analisis-sentimen-warganet-berdasarkan-cuitanterhadap-indonesian-government-dalam-menangani-dc1f117a8443">Analisis Sentimen Publik Berdasarkan Cuitan Twitter  </a>: Apa yang menjadi persepsi dan emosi terbesar publik terkait COVID 19 yang harus dijadikan pertimbangan pemerintah?
 Saya melakukan analisis mengenai sentimen publik berdasarkan cuitan twitter </li>
 
 
